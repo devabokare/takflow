@@ -48,29 +48,29 @@ export function TaskInput({ onAddTask, categories }: TaskInputProps) {
   return (
     <form onSubmit={handleSubmit}>
       <div className="relative">
-        <div className="flex items-center gap-3 p-3 bg-card rounded-lg border border-border transition-all duration-200 hover:border-border/80 focus-within:border-foreground/20">
+        <div className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border shadow-soft transition-all duration-200 hover:shadow-medium focus-within:border-primary/30 focus-within:shadow-medium">
           <button
             type="submit"
             disabled={!title.trim()}
-            className="flex-shrink-0 w-8 h-8 rounded-lg bg-foreground flex items-center justify-center text-background transition-all duration-200 hover:opacity-90 active:scale-95 disabled:opacity-30"
+            className="flex-shrink-0 w-10 h-10 rounded-xl gradient-primary flex items-center justify-center text-white transition-all duration-200 hover:opacity-90 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-5 h-5" />
           </button>
           
           <Input
             type="text"
-            placeholder="Add a new task..."
+            placeholder="What needs to be done?"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onFocus={() => setIsExpanded(true)}
-            className="flex-1 border-0 bg-transparent text-base placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-8 px-0"
+            className="flex-1 border-0 bg-transparent text-base font-medium placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-10 px-0"
           />
           
           <div className={`flex items-center gap-1 transition-all duration-200 ${isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
             <button
               type="button"
               onClick={cyclePriority}
-              className={`p-2 rounded-lg hover:bg-secondary transition-colors ${priorityConfig[priority].className}`}
+              className={`p-2.5 rounded-lg hover:bg-secondary transition-colors ${priorityConfig[priority].className}`}
               title={`Priority: ${priorityConfig[priority].label}`}
             >
               <Flag className="w-4 h-4" fill="currentColor" />
@@ -80,19 +80,19 @@ export function TaskInput({ onAddTask, categories }: TaskInputProps) {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className={`p-2 rounded-lg hover:bg-secondary transition-colors ${selectedCategory ? '' : 'text-muted-foreground'}`}
+                  className={`p-2.5 rounded-lg hover:bg-secondary transition-colors ${selectedCategory ? '' : 'text-muted-foreground'}`}
                   style={selectedCategory ? { color: `hsl(${selectedCategory.color})` } : undefined}
                 >
                   <Tag className="w-4 h-4" />
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-48 p-2" align="end">
+              <PopoverContent className="w-52 p-2" align="end">
                 <div className="space-y-1">
                   <button
                     type="button"
                     onClick={() => setSelectedCategoryId(null)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                      !selectedCategoryId ? 'bg-secondary' : 'hover:bg-secondary'
+                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      !selectedCategoryId ? 'bg-secondary text-foreground' : 'hover:bg-secondary text-muted-foreground'
                     }`}
                   >
                     No category
@@ -102,12 +102,12 @@ export function TaskInput({ onAddTask, categories }: TaskInputProps) {
                       key={category.id}
                       type="button"
                       onClick={() => setSelectedCategoryId(category.id)}
-                      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                        selectedCategoryId === category.id ? 'bg-secondary' : 'hover:bg-secondary'
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                        selectedCategoryId === category.id ? 'bg-secondary text-foreground' : 'hover:bg-secondary text-muted-foreground'
                       }`}
                     >
                       <span
-                        className="w-2 h-2 rounded-full"
+                        className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: `hsl(${category.color})` }}
                       />
                       {category.name}
@@ -121,7 +121,7 @@ export function TaskInput({ onAddTask, categories }: TaskInputProps) {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className={`p-2 rounded-lg hover:bg-secondary transition-colors ${dueDate ? 'text-foreground' : 'text-muted-foreground'}`}
+                  className={`p-2.5 rounded-lg hover:bg-secondary transition-colors ${dueDate ? 'text-primary' : 'text-muted-foreground'}`}
                 >
                   <Calendar className="w-4 h-4" />
                 </button>
@@ -132,7 +132,7 @@ export function TaskInput({ onAddTask, categories }: TaskInputProps) {
                   selected={dueDate}
                   onSelect={setDueDate}
                   initialFocus
-                  className="pointer-events-auto"
+                  className="pointer-events-auto rounded-xl"
                 />
               </PopoverContent>
             </Popover>
@@ -140,23 +140,25 @@ export function TaskInput({ onAddTask, categories }: TaskInputProps) {
         </div>
         
         {isExpanded && (title || dueDate || selectedCategory) && (
-          <div className="flex items-center gap-3 mt-2 px-3 text-xs text-muted-foreground">
-            <span className={priorityConfig[priority].className}>
-              {priorityConfig[priority].label}
+          <div className="flex items-center gap-3 mt-3 px-4 text-xs font-medium">
+            <span className={`px-2 py-1 rounded-md bg-secondary ${priorityConfig[priority].className}`}>
+              {priorityConfig[priority].label} priority
             </span>
             {selectedCategory && (
-              <>
-                <span>•</span>
-                <span style={{ color: `hsl(${selectedCategory.color})` }}>
-                  {selectedCategory.name}
-                </span>
-              </>
+              <span 
+                className="px-2 py-1 rounded-md"
+                style={{ 
+                  backgroundColor: `hsl(${selectedCategory.color} / 0.15)`,
+                  color: `hsl(${selectedCategory.color})` 
+                }}
+              >
+                {selectedCategory.name}
+              </span>
             )}
             {dueDate && (
-              <>
-                <span>•</span>
-                <span>Due {format(dueDate, 'MMM d, yyyy')}</span>
-              </>
+              <span className="px-2 py-1 rounded-md bg-secondary text-muted-foreground">
+                Due {format(dueDate, 'MMM d, yyyy')}
+              </span>
             )}
           </div>
         )}
