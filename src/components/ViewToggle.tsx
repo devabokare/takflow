@@ -1,4 +1,4 @@
-import { List, Columns, Calendar } from 'lucide-react';
+import { List, Columns, Calendar, Clock } from 'lucide-react';
 import { ViewMode } from '@/types/task';
 
 interface ViewToggleProps {
@@ -10,6 +10,7 @@ const views: { mode: ViewMode; icon: typeof List; label: string }[] = [
   { mode: 'list', icon: List, label: 'List' },
   { mode: 'board', icon: Columns, label: 'Board' },
   { mode: 'calendar', icon: Calendar, label: 'Calendar' },
+  { mode: 'planner', icon: Clock, label: 'Planner' },
 ];
 
 export function ViewToggle({ viewMode, onViewChange }: ViewToggleProps) {

@@ -1,6 +1,6 @@
 export type Priority = 'low' | 'medium' | 'high';
 export type FilterStatus = 'all' | 'active' | 'completed';
-export type ViewMode = 'list' | 'board' | 'calendar';
+export type ViewMode = 'list' | 'board' | 'calendar' | 'planner';
 export type TaskStatus = 'todo' | 'in-progress' | 'done';
 
 export interface Category {
