@@ -1,17 +1,21 @@
 import { Task, Category } from '@/types/task';
 import { TaskItem } from '../TaskItem';
 import { ListTodo } from 'lucide-react';
+import { Attachment } from '../FileUpload';
 
 interface ListViewProps {
   tasks: Task[];
   categories: Category[];
+  attachments?: Record<string, Attachment[]>;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onEdit: (id: string, title: string) => void;
   onReorder: (activeId: string, overId: string) => void;
+  onAddAttachment?: (attachment: Attachment) => void;
+  onDeleteAttachment?: (taskId: string, attachmentId: string) => void;
 }
 
-export function ListView({ tasks, categories, onToggle, onDelete, onEdit }: ListViewProps) {
+export function ListView({ tasks, categories, attachments = {}, onToggle, onDelete, onEdit, onAddAttachment, onDeleteAttachment }: ListViewProps) {
   if (tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -37,9 +41,12 @@ export function ListView({ tasks, categories, onToggle, onDelete, onEdit }: List
           <TaskItem
             task={task}
             category={categories.find(c => c.id === task.categoryId)}
+            attachments={attachments[task.id] || []}
             onToggle={onToggle}
             onDelete={onDelete}
             onEdit={onEdit}
+            onAddAttachment={onAddAttachment}
+            onDeleteAttachment={onDeleteAttachment}
           />
         </div>
       ))}

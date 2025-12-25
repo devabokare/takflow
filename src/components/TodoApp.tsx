@@ -22,7 +22,7 @@ type ViewMode = 'list' | 'board' | 'calendar' | 'planner';
 export function TodoApp() {
   const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
-  const { tasks, categories, loading: tasksLoading, addTask, toggleTask, deleteTask, editTask, updateTaskStatus } = useTasks();
+  const { tasks, categories, attachments, loading: tasksLoading, addTask, toggleTask, deleteTask, editTask, updateTaskStatus, addAttachment, removeAttachment } = useTasks();
   
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -133,10 +133,13 @@ export function TodoApp() {
           <ListView
             tasks={viewTasks as any}
             categories={viewCategories}
+            attachments={attachments}
             onToggle={toggleTask}
             onDelete={deleteTask}
             onEdit={editTask}
             onReorder={() => {}}
+            onAddAttachment={addAttachment}
+            onDeleteAttachment={removeAttachment}
           />
         );
     }

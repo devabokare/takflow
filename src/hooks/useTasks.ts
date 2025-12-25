@@ -6,6 +6,16 @@ import { toast } from 'sonner';
 export type Priority = 'low' | 'medium' | 'high';
 export type TaskStatus = 'todo' | 'in-progress' | 'done';
 
+export interface Attachment {
+  id: string;
+  task_id: string;
+  file_name: string;
+  file_type: string;
+  file_url: string;
+  file_size: number | null;
+  created_at: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -17,6 +27,7 @@ export interface Task {
   description: string | null;
   created_at: string;
   updated_at: string;
+  attachments?: Attachment[];
 }
 
 export interface Category {
@@ -37,6 +48,7 @@ export function useTasks() {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [attachments, setAttachments] = useState<Record<string, Attachment[]>>({});
   const [loading, setLoading] = useState(true);
 
   // Fetch tasks
@@ -88,19 +100,41 @@ export function useTasks() {
     }
   }, [user]);
 
+  // Fetch attachments for all tasks
+  const fetchAttachments = useCallback(async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('attachments')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching attachments:', error);
+    } else if (data) {
+      const grouped: Record<string, Attachment[]> = {};
+      data.forEach(att => {
+        if (!grouped[att.task_id]) grouped[att.task_id] = [];
+        grouped[att.task_id].push(att);
+      });
+      setAttachments(grouped);
+    }
+  }, [user]);
+
   // Initial fetch
   useEffect(() => {
     if (user) {
       setLoading(true);
-      Promise.all([fetchTasks(), fetchCategories()]).finally(() => {
+      Promise.all([fetchTasks(), fetchCategories(), fetchAttachments()]).finally(() => {
         setLoading(false);
       });
     } else {
       setTasks([]);
       setCategories([]);
+      setAttachments({});
       setLoading(false);
     }
-  }, [user, fetchTasks, fetchCategories]);
+  }, [user, fetchTasks, fetchCategories, fetchAttachments]);
 
   // Add task
   const addTask = async (
@@ -208,14 +242,33 @@ export function useTasks() {
     }
   };
 
+  // Add attachment to local state
+  const addAttachment = (attachment: Attachment) => {
+    setAttachments(prev => ({
+      ...prev,
+      [attachment.task_id]: [...(prev[attachment.task_id] || []), attachment],
+    }));
+  };
+
+  // Remove attachment from local state
+  const removeAttachment = (taskId: string, attachmentId: string) => {
+    setAttachments(prev => ({
+      ...prev,
+      [taskId]: (prev[taskId] || []).filter(a => a.id !== attachmentId),
+    }));
+  };
+
   return {
     tasks,
     categories,
+    attachments,
     loading,
     addTask,
     toggleTask,
     deleteTask,
     editTask,
     updateTaskStatus,
+    addAttachment,
+    removeAttachment,
   };
 }
