@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Task, Priority, FilterStatus, ViewMode, Category, DEFAULT_CATEGORIES, TaskStatus } from '@/types/task';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { useTasks, Priority, TaskStatus } from '@/hooks/useTasks';
 import { TaskInput } from '@/components/TaskInput';
 import { ListView } from '@/components/views/ListView';
 import { BoardView } from '@/components/views/BoardView';
@@ -12,11 +13,17 @@ import { ProgressBar } from '@/components/ProgressBar';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { ViewToggle } from '@/components/ViewToggle';
 import { CategoryFilter } from '@/components/CategoryFilter';
-import { LayoutGrid } from 'lucide-react';
+import { LayoutGrid, LogOut, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+type FilterStatus = 'all' | 'active' | 'completed';
+type ViewMode = 'list' | 'board' | 'calendar' | 'planner';
 
 export function TodoApp() {
-  const [tasks, setTasks] = useLocalStorage<Task[]>('todo-tasks', []);
-  const [categories] = useLocalStorage<Category[]>('todo-categories', DEFAULT_CATEGORIES);
+  const { user, loading: authLoading, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { tasks, categories, loading: tasksLoading, addTask, toggleTask, deleteTask, editTask, updateTaskStatus } = useTasks();
+  
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -29,6 +36,12 @@ export function TodoApp() {
   });
 
   useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add('dark');
     } else {
@@ -36,59 +49,12 @@ export function TodoApp() {
     }
   }, [isDark]);
 
-  const addTask = (title: string, priority: Priority, dueDate: string | null, categoryId: string | null) => {
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      title,
-      completed: false,
-      priority,
-      dueDate,
-      createdAt: new Date().toISOString(),
-      categoryId,
-      status: 'todo',
-    };
-    setTasks([newTask, ...tasks]);
+  const handleAddTask = (title: string, priority: Priority, dueDate: string | null, categoryId: string | null) => {
+    addTask(title, priority, dueDate, categoryId);
   };
 
-  const toggleTask = (id: string) => {
-    setTasks(tasks.map((task) => 
-      task.id === id ? { 
-        ...task, 
-        completed: !task.completed,
-        status: !task.completed ? 'done' : 'todo'
-      } : task
-    ));
-  };
-
-  const deleteTask = (id: string) => {
-    setTasks(tasks.filter((task) => task.id !== id));
-  };
-
-  const editTask = (id: string, title: string) => {
-    setTasks(tasks.map((task) =>
-      task.id === id ? { ...task, title } : task
-    ));
-  };
-
-  const updateTaskStatus = (id: string, status: TaskStatus) => {
-    setTasks(tasks.map((task) =>
-      task.id === id ? { 
-        ...task, 
-        status,
-        completed: status === 'done'
-      } : task
-    ));
-  };
-
-  const reorderTasks = (activeId: string, overId: string) => {
-    const oldIndex = tasks.findIndex(t => t.id === activeId);
-    const newIndex = tasks.findIndex(t => t.id === overId);
-    if (oldIndex !== -1 && newIndex !== -1) {
-      const newTasks = [...tasks];
-      const [removed] = newTasks.splice(oldIndex, 1);
-      newTasks.splice(newIndex, 0, removed);
-      setTasks(newTasks);
-    }
+  const handleStatusChange = (id: string, status: TaskStatus) => {
+    updateTaskStatus(id, status);
   };
 
   const filteredTasks = useMemo(() => {
@@ -99,7 +65,7 @@ export function TodoApp() {
         return true;
       })
       .filter((task) => {
-        if (selectedCategory) return task.categoryId === selectedCategory;
+        if (selectedCategory) return task.category_id === selectedCategory;
         return true;
       })
       .filter((task) =>
@@ -113,24 +79,42 @@ export function TodoApp() {
     completed: tasks.filter((t) => t.completed).length,
   }), [tasks]);
 
+  // Convert tasks to the format expected by view components
+  const viewTasks = useMemo(() => {
+    return filteredTasks.map(task => ({
+      ...task,
+      dueDate: task.due_date,
+      categoryId: task.category_id,
+      createdAt: task.created_at,
+    }));
+  }, [filteredTasks]);
+
+  const viewCategories = useMemo(() => {
+    return categories.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      color: cat.color,
+    }));
+  }, [categories]);
+
   const renderView = () => {
     switch (viewMode) {
       case 'board':
         return (
           <BoardView
-            tasks={filteredTasks}
-            categories={categories}
+            tasks={viewTasks as any}
+            categories={viewCategories}
             onToggle={toggleTask}
             onDelete={deleteTask}
             onEdit={editTask}
-            onStatusChange={updateTaskStatus}
+            onStatusChange={handleStatusChange as any}
           />
         );
       case 'calendar':
         return (
           <CalendarView
-            tasks={filteredTasks}
-            categories={categories}
+            tasks={viewTasks as any}
+            categories={viewCategories}
             onToggle={toggleTask}
             onDelete={deleteTask}
             onEdit={editTask}
@@ -139,24 +123,36 @@ export function TodoApp() {
       case 'planner':
         return (
           <PlannerView
-            tasks={filteredTasks}
-            categories={categories}
+            tasks={viewTasks as any}
+            categories={viewCategories}
             onToggle={toggleTask}
           />
         );
       default:
         return (
           <ListView
-            tasks={filteredTasks}
-            categories={categories}
+            tasks={viewTasks as any}
+            categories={viewCategories}
             onToggle={toggleTask}
             onDelete={deleteTask}
             onEdit={editTask}
-            onReorder={reorderTasks}
+            onReorder={() => {}}
           />
         );
     }
   };
+
+  if (authLoading || tasksLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-200">
@@ -169,10 +165,15 @@ export function TodoApp() {
             </div>
             <div>
               <h1 className="text-xl font-semibold text-foreground">Workspace</h1>
-              <p className="text-sm text-muted-foreground">Your personal productivity hub</p>
+              <p className="text-sm text-muted-foreground">{user.email}</p>
             </div>
           </div>
-          <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
+          <div className="flex items-center gap-2">
+            <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
+            <Button variant="ghost" size="icon" onClick={signOut}>
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </div>
         </header>
 
         {/* Progress */}
@@ -182,7 +183,7 @@ export function TodoApp() {
 
         {/* Task Input */}
         <div className="mb-6">
-          <TaskInput onAddTask={addTask} categories={categories} />
+          <TaskInput onAddTask={handleAddTask} categories={viewCategories} />
         </div>
 
         {/* Controls Row */}
@@ -199,7 +200,7 @@ export function TodoApp() {
             </div>
           </div>
           <CategoryFilter
-            categories={categories}
+            categories={viewCategories}
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
           />
