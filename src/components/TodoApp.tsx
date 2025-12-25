@@ -5,6 +5,7 @@ import { TaskInput } from '@/components/TaskInput';
 import { ListView } from '@/components/views/ListView';
 import { BoardView } from '@/components/views/BoardView';
 import { CalendarView } from '@/components/views/CalendarView';
+import { PlannerView } from '@/components/views/PlannerView';
 import { TaskFilters } from '@/components/TaskFilters';
 import { SearchBar } from '@/components/SearchBar';
 import { ProgressBar } from '@/components/ProgressBar';
@@ -133,6 +134,14 @@ export function TodoApp() {
             onToggle={toggleTask}
             onDelete={deleteTask}
             onEdit={editTask}
+          />
+        );
+      case 'planner':
+        return (
+          <PlannerView
+            tasks={filteredTasks}
+            categories={categories}
+            onToggle={toggleTask}
           />
         );
       default:
