@@ -155,39 +155,44 @@ export function TodoApp() {
   }
 
   return (
-    <div className="min-h-screen bg-background transition-colors duration-200">
+    <div className="min-h-screen transition-colors duration-200">
       <div className="max-w-5xl mx-auto px-4 py-6 md:py-10">
         {/* Header */}
-        <header className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-foreground flex items-center justify-center">
-              <LayoutGrid className="w-5 h-5 text-background" />
+        <header className="flex items-center justify-between mb-8 animate-fade-in">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center shadow-medium">
+              <LayoutGrid className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-foreground">Workspace</h1>
+              <h1 className="text-xl font-bold text-foreground">TaskFlow</h1>
               <p className="text-sm text-muted-foreground">{user.email}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
-            <Button variant="ghost" size="icon" onClick={signOut}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={signOut}
+              className="text-muted-foreground hover:text-foreground hover:bg-secondary"
+            >
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
         </header>
 
         {/* Progress */}
-        <div className="mb-6 p-4 bg-card rounded-lg border border-border">
+        <div className="mb-6 p-5 bg-card rounded-2xl border border-border shadow-soft animate-fade-in" style={{ animationDelay: '0.1s' }}>
           <ProgressBar completed={counts.completed} total={counts.all} />
         </div>
 
         {/* Task Input */}
-        <div className="mb-6">
+        <div className="mb-6 animate-fade-in" style={{ animationDelay: '0.15s' }}>
           <TaskInput onAddTask={handleAddTask} categories={viewCategories} />
         </div>
 
         {/* Controls Row */}
-        <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col gap-4 mb-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <div className="flex flex-wrap items-center gap-3">
             <ViewToggle viewMode={viewMode} onViewChange={setViewMode} />
             <TaskFilters
@@ -195,7 +200,7 @@ export function TodoApp() {
               onFilterChange={setFilter}
               counts={counts}
             />
-            <div className="flex-1 min-w-[180px] max-w-[240px]">
+            <div className="flex-1 min-w-[180px] max-w-[260px]">
               <SearchBar value={searchQuery} onChange={setSearchQuery} />
             </div>
           </div>
@@ -207,18 +212,20 @@ export function TodoApp() {
         </div>
 
         {/* View */}
-        <div className="min-h-[400px]">
+        <div className="min-h-[400px] animate-fade-in" style={{ animationDelay: '0.25s' }}>
           {renderView()}
         </div>
 
         {/* Footer */}
         {tasks.length > 0 && (
-          <footer className="mt-8 text-center text-sm text-muted-foreground">
-            {counts.active === 0 && counts.completed > 0 ? (
-              <span>All tasks completed! Great job!</span>
-            ) : (
-              <span>{counts.active} task{counts.active !== 1 ? 's' : ''} remaining</span>
-            )}
+          <footer className="mt-10 text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 text-sm text-muted-foreground">
+              {counts.active === 0 && counts.completed > 0 ? (
+                <span>🎉 All tasks completed! Great job!</span>
+              ) : (
+                <span>{counts.active} task{counts.active !== 1 ? 's' : ''} remaining</span>
+              )}
+            </div>
           </footer>
         )}
       </div>

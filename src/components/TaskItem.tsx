@@ -50,20 +50,20 @@ export function TaskItem({ task, category, onToggle, onDelete, onEdit }: TaskIte
 
   return (
     <div
-      className={`group flex items-center gap-3 p-3 bg-card rounded-lg border border-border transition-all duration-200 hover:bg-secondary/30 ${
-        isExiting ? 'opacity-0 scale-95' : ''
+      className={`group flex items-center gap-4 p-4 bg-card rounded-xl border border-border shadow-soft transition-all duration-200 hover:shadow-medium hover:border-border/80 ${
+        isExiting ? 'task-exit' : 'task-enter'
       } ${task.completed ? 'opacity-60' : ''}`}
     >
       {/* Checkbox */}
       <button
         onClick={() => onToggle(task.id)}
-        className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+        className={`flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${
           task.completed
-            ? 'bg-foreground border-foreground text-background'
-            : 'border-border hover:border-foreground/50'
+            ? 'bg-primary border-primary text-primary-foreground'
+            : 'border-border hover:border-primary/50 hover:bg-primary/5'
         }`}
       >
-        {task.completed && <Check className="w-3 h-3" strokeWidth={3} />}
+        {task.completed && <Check className="w-4 h-4" strokeWidth={3} />}
       </button>
 
       {/* Content */}
@@ -80,20 +80,20 @@ export function TaskItem({ task, category, onToggle, onDelete, onEdit }: TaskIte
               }}
               onBlur={handleEdit}
               autoFocus
-              className="flex-1 h-7 text-sm"
+              className="flex-1 h-8 text-sm rounded-lg"
             />
             <button
               onClick={() => setIsEditing(false)}
-              className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+              className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <p
               onClick={() => setIsEditing(true)}
-              className={`text-sm cursor-text transition-all duration-200 ${
+              className={`text-sm font-medium cursor-text transition-all duration-200 ${
                 task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
               }`}
             >
@@ -105,11 +105,15 @@ export function TaskItem({ task, category, onToggle, onDelete, onEdit }: TaskIte
               {category && <CategoryBadge category={category} />}
               
               <span className={`${priorityConfig[task.priority].className}`}>
-                <Flag className="w-3 h-3" fill="currentColor" />
+                <Flag className="w-3.5 h-3.5" fill="currentColor" />
               </span>
               
               {task.dueDate && (
-                <span className={`flex items-center gap-1 text-xs ${isOverdue ? 'text-destructive' : 'text-muted-foreground'}`}>
+                <span className={`flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-md ${
+                  isOverdue 
+                    ? 'bg-destructive/10 text-destructive' 
+                    : 'bg-secondary text-muted-foreground'
+                }`}>
                   <Calendar className="w-3 h-3" />
                   {formatDueDate(task.dueDate)}
                 </span>
@@ -123,15 +127,15 @@ export function TaskItem({ task, category, onToggle, onDelete, onEdit }: TaskIte
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         <button
           onClick={() => setIsEditing(true)}
-          className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
         >
-          <Edit2 className="w-3.5 h-3.5" />
+          <Edit2 className="w-4 h-4" />
         </button>
         <button
           onClick={handleDelete}
-          className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+          className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 className="w-4 h-4" />
         </button>
       </div>
     </div>
