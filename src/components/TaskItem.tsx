@@ -1,23 +1,25 @@
 import { useState } from 'react';
 import { Check, Trash2, Edit2, X, Flag, Calendar } from 'lucide-react';
-import { Task, Priority } from '@/types/task';
+import { Task, Priority, Category } from '@/types/task';
+import { CategoryBadge } from './CategoryBadge';
 import { Input } from '@/components/ui/input';
 import { format, isToday, isTomorrow, isPast, isValid } from 'date-fns';
 
 interface TaskItemProps {
   task: Task;
+  category?: Category;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onEdit: (id: string, title: string) => void;
 }
 
-const priorityConfig: Record<Priority, { label: string; className: string; bgClassName: string }> = {
-  low: { label: 'Low', className: 'text-priority-low', bgClassName: 'bg-priority-low/10' },
-  medium: { label: 'Medium', className: 'text-priority-medium', bgClassName: 'bg-priority-medium/10' },
-  high: { label: 'High', className: 'text-priority-high', bgClassName: 'bg-priority-high/10' },
+const priorityConfig: Record<Priority, { label: string; className: string }> = {
+  low: { label: 'Low', className: 'text-priority-low' },
+  medium: { label: 'Medium', className: 'text-priority-medium' },
+  high: { label: 'High', className: 'text-priority-high' },
 };
 
-export function TaskItem({ task, onToggle, onDelete, onEdit }: TaskItemProps) {
+export function TaskItem({ task, category, onToggle, onDelete, onEdit }: TaskItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
   const [isExiting, setIsExiting] = useState(false);
@@ -31,7 +33,7 @@ export function TaskItem({ task, onToggle, onDelete, onEdit }: TaskItemProps) {
 
   const handleDelete = () => {
     setIsExiting(true);
-    setTimeout(() => onDelete(task.id), 200);
+    setTimeout(() => onDelete(task.id), 150);
   };
 
   const formatDueDate = (dateString: string | null) => {
@@ -48,26 +50,20 @@ export function TaskItem({ task, onToggle, onDelete, onEdit }: TaskItemProps) {
 
   return (
     <div
-      className={`group relative flex items-center gap-4 p-4 bg-card rounded-xl border border-border/50 shadow-soft transition-all duration-300 hover:shadow-medium hover:border-border ${
-        isExiting ? 'task-exit' : 'task-enter'
+      className={`group flex items-center gap-3 p-3 bg-card rounded-lg border border-border transition-all duration-200 hover:bg-secondary/30 ${
+        isExiting ? 'opacity-0 scale-95' : ''
       } ${task.completed ? 'opacity-60' : ''}`}
     >
-      {/* Priority indicator */}
-      <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full ${
-        task.priority === 'high' ? 'bg-priority-high' : 
-        task.priority === 'medium' ? 'bg-priority-medium' : 'bg-priority-low'
-      }`} />
-
       {/* Checkbox */}
       <button
         onClick={() => onToggle(task.id)}
-        className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+        className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
           task.completed
-            ? 'bg-accent border-accent text-accent-foreground check-bounce'
-            : 'border-border hover:border-primary hover:bg-primary/5'
+            ? 'bg-foreground border-foreground text-background'
+            : 'border-border hover:border-foreground/50'
         }`}
       >
-        {task.completed && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
+        {task.completed && <Check className="w-3 h-3" strokeWidth={3} />}
       </button>
 
       {/* Content */}
@@ -84,7 +80,7 @@ export function TaskItem({ task, onToggle, onDelete, onEdit }: TaskItemProps) {
               }}
               onBlur={handleEdit}
               autoFocus
-              className="flex-1 h-8 text-base"
+              className="flex-1 h-7 text-sm"
             />
             <button
               onClick={() => setIsEditing(false)}
@@ -94,27 +90,28 @@ export function TaskItem({ task, onToggle, onDelete, onEdit }: TaskItemProps) {
             </button>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div className="flex items-center gap-3">
             <p
-              className={`text-base transition-all duration-200 ${
+              onClick={() => setIsEditing(true)}
+              className={`text-sm cursor-text transition-all duration-200 ${
                 task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
               }`}
             >
               {task.title}
             </p>
             
-            {/* Meta info */}
-            <div className="flex items-center gap-3 text-xs">
-              <span className={`flex items-center gap-1 ${priorityConfig[task.priority].className}`}>
+            {/* Meta info inline */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {category && <CategoryBadge category={category} />}
+              
+              <span className={`${priorityConfig[task.priority].className}`}>
                 <Flag className="w-3 h-3" fill="currentColor" />
-                {priorityConfig[task.priority].label}
               </span>
               
               {task.dueDate && (
-                <span className={`flex items-center gap-1 ${isOverdue ? 'text-destructive' : 'text-muted-foreground'}`}>
+                <span className={`flex items-center gap-1 text-xs ${isOverdue ? 'text-destructive' : 'text-muted-foreground'}`}>
                   <Calendar className="w-3 h-3" />
                   {formatDueDate(task.dueDate)}
-                  {isOverdue && ' (overdue)'}
                 </span>
               )}
             </div>
@@ -126,15 +123,15 @@ export function TaskItem({ task, onToggle, onDelete, onEdit }: TaskItemProps) {
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         <button
           onClick={() => setIsEditing(true)}
-          className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
         >
-          <Edit2 className="w-4 h-4" />
+          <Edit2 className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={handleDelete}
-          className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+          className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
