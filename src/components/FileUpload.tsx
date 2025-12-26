@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Upload, X, FileText, Video, Image, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -30,10 +30,24 @@ const ALLOWED_TYPES = [
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
+// Generate signed URLs for file access (1 hour expiry)
+const getSignedUrl = async (filePath: string): Promise<string | null> => {
+  const { data, error } = await supabase.storage
+    .from('task-attachments')
+    .createSignedUrl(filePath, 3600); // 1 hour expiry
+  
+  if (error) {
+    console.error('Error getting signed URL:', error);
+    return null;
+  }
+  return data.signedUrl;
+};
+
 export function FileUpload({ taskId, attachments, onUpload, onDelete }: FileUploadProps) {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -61,10 +75,7 @@ export function FileUpload({ taskId, attachments, onUpload, onDelete }: FileUplo
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('task-attachments')
-        .getPublicUrl(filePath);
-
+      // Store the file path (not signed URL) - we'll generate signed URLs on demand
       const { data: attachment, error: dbError } = await supabase
         .from('attachments')
         .insert({
@@ -72,7 +83,7 @@ export function FileUpload({ taskId, attachments, onUpload, onDelete }: FileUplo
           user_id: user.id,
           file_name: file.name,
           file_type: file.type,
-          file_url: publicUrl,
+          file_url: filePath, // Store the path, not the URL
           file_size: file.size,
         })
         .select()
@@ -121,6 +132,24 @@ export function FileUpload({ taskId, attachments, onUpload, onDelete }: FileUplo
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  // Fetch signed URLs for all attachments when attachments change
+  useEffect(() => {
+    const fetchSignedUrls = async () => {
+      const urls: Record<string, string> = {};
+      for (const attachment of attachments) {
+        const signedUrl = await getSignedUrl(attachment.file_url);
+        if (signedUrl) {
+          urls[attachment.id] = signedUrl;
+        }
+      }
+      setSignedUrls(urls);
+    };
+    
+    if (attachments.length > 0) {
+      fetchSignedUrls();
+    }
+  }, [attachments]);
+
   return (
     <div className="space-y-3">
       {/* Upload button */}
@@ -161,7 +190,7 @@ export function FileUpload({ taskId, attachments, onUpload, onDelete }: FileUplo
               </span>
               
               <a
-                href={attachment.file_url}
+                href={signedUrls[attachment.id] || '#'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 text-xs text-foreground hover:text-primary truncate"
@@ -188,9 +217,9 @@ export function FileUpload({ taskId, attachments, onUpload, onDelete }: FileUplo
       {attachments.filter(a => a.file_type.startsWith('image/') || a.file_type.startsWith('video/')).length > 0 && (
         <div className="flex flex-wrap gap-2 mt-2">
           {attachments.filter(a => a.file_type.startsWith('image/')).map(img => (
-            <a key={img.id} href={img.file_url} target="_blank" rel="noopener noreferrer">
+            <a key={img.id} href={signedUrls[img.id] || '#'} target="_blank" rel="noopener noreferrer">
               <img
-                src={img.file_url}
+                src={signedUrls[img.id] || ''}
                 alt={img.file_name}
                 className="w-16 h-16 object-cover rounded-lg border border-border hover:border-primary transition-colors"
               />
@@ -199,7 +228,7 @@ export function FileUpload({ taskId, attachments, onUpload, onDelete }: FileUplo
           {attachments.filter(a => a.file_type.startsWith('video/')).map(vid => (
             <video
               key={vid.id}
-              src={vid.file_url}
+              src={signedUrls[vid.id] || ''}
               className="w-24 h-16 object-cover rounded-lg border border-border"
               controls
             />
