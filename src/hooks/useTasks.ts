@@ -27,6 +27,7 @@ export interface Task {
   description: string | null;
   created_at: string;
   updated_at: string;
+  order: number;
   attachments?: Attachment[];
 }
 
@@ -58,7 +59,7 @@ export function useTasks() {
     const { data, error } = await supabase
       .from('tasks')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('order', { ascending: true });
 
     if (error) {
       console.error('Error fetching tasks:', error);
@@ -145,6 +146,9 @@ export function useTasks() {
   ) => {
     if (!user) return;
 
+    // Get the minimum order to put new task at the top
+    const minOrder = tasks.length > 0 ? Math.min(...tasks.map(t => t.order)) - 1 : 0;
+
     const newTask = {
       user_id: user.id,
       title,
@@ -153,6 +157,7 @@ export function useTasks() {
       category_id: categoryId,
       completed: false,
       status: 'todo' as TaskStatus,
+      order: minOrder,
     };
 
     const { data, error } = await supabase
@@ -258,6 +263,52 @@ export function useTasks() {
     }));
   };
 
+  // Reorder tasks
+  const reorderTasks = async (activeId: string, overId: string) => {
+    if (activeId === overId) return;
+
+    const oldIndex = tasks.findIndex(t => t.id === activeId);
+    const newIndex = tasks.findIndex(t => t.id === overId);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Create new array with reordered tasks
+    const reorderedTasks = [...tasks];
+    const [movedTask] = reorderedTasks.splice(oldIndex, 1);
+    reorderedTasks.splice(newIndex, 0, movedTask);
+
+    // Update order values
+    const updatedTasks = reorderedTasks.map((task, index) => ({
+      ...task,
+      order: index,
+    }));
+
+    // Optimistic update
+    setTasks(updatedTasks);
+
+    // Batch update to database
+    const updates = updatedTasks.map(task => ({
+      id: task.id,
+      order: task.order,
+    }));
+
+    // Update each task's order in the database
+    for (const update of updates) {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ order: update.order })
+        .eq('id', update.id);
+
+      if (error) {
+        console.error('Error updating task order:', error);
+        // Revert on error
+        fetchTasks();
+        toast.error('Failed to reorder tasks');
+        return;
+      }
+    }
+  };
+
   return {
     tasks,
     categories,
@@ -270,5 +321,6 @@ export function useTasks() {
     updateTaskStatus,
     addAttachment,
     removeAttachment,
+    reorderTasks,
   };
 }
