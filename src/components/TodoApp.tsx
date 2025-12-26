@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTasks, Priority, TaskStatus } from '@/hooks/useTasks';
+import { useNotifications } from '@/hooks/useNotifications';
 import { TaskInput } from '@/components/TaskInput';
 import { ListView } from '@/components/views/ListView';
 import { BoardView } from '@/components/views/BoardView';
@@ -13,6 +14,7 @@ import { ProgressBar } from '@/components/ProgressBar';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { ViewToggle } from '@/components/ViewToggle';
 import { CategoryFilter } from '@/components/CategoryFilter';
+import { NotificationCenter } from '@/components/NotificationCenter';
 import { LayoutGrid, LogOut, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -23,6 +25,17 @@ export function TodoApp() {
   const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const { tasks, categories, attachments, loading: tasksLoading, addTask, toggleTask, deleteTask, editTask, updateTaskStatus, addAttachment, removeAttachment } = useTasks();
+  const { 
+    notifications, 
+    reminders,
+    unreadCount, 
+    addReminder,
+    deleteReminder,
+    markAsRead, 
+    markAllAsRead, 
+    deleteNotification, 
+    clearAll 
+  } = useNotifications();
   
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -134,12 +147,15 @@ export function TodoApp() {
             tasks={viewTasks as any}
             categories={viewCategories}
             attachments={attachments}
+            reminders={reminders}
             onToggle={toggleTask}
             onDelete={deleteTask}
             onEdit={editTask}
             onReorder={() => {}}
             onAddAttachment={addAttachment}
             onDeleteAttachment={removeAttachment}
+            onAddReminder={addReminder}
+            onDeleteReminder={deleteReminder}
           />
         );
     }
@@ -172,6 +188,14 @@ export function TodoApp() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <NotificationCenter
+              notifications={notifications}
+              unreadCount={unreadCount}
+              onMarkAsRead={markAsRead}
+              onMarkAllAsRead={markAllAsRead}
+              onDelete={deleteNotification}
+              onClearAll={clearAll}
+            />
             <ThemeToggle isDark={isDark} onToggle={() => setIsDark(!isDark)} />
             <Button 
               variant="ghost" 
