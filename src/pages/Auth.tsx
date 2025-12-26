@@ -6,9 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CheckSquare, Mail, Lock, AlertCircle, ArrowRight, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+
+type AuthMode = 'login' | 'signup' | 'forgot';
 
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,8 +24,33 @@ export default function Auth() {
     setError(null);
     setLoading(true);
 
-    if (!email || !password) {
-      setError('Please fill in all fields');
+    if (!email) {
+      setError('Please enter your email');
+      setLoading(false);
+      return;
+    }
+
+    if (mode === 'forgot') {
+      try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/`,
+        });
+        if (error) {
+          setError(error.message);
+        } else {
+          toast.success('Password reset email sent! Check your inbox.');
+          setMode('login');
+        }
+      } catch (err) {
+        setError('An unexpected error occurred');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    if (!password) {
+      setError('Please enter your password');
       setLoading(false);
       return;
     }
@@ -34,7 +62,7 @@ export default function Auth() {
     }
 
     try {
-      if (isLogin) {
+      if (mode === 'login') {
         const { error } = await signIn(email, password);
         if (error) {
           if (error.message.includes('Invalid login credentials')) {
@@ -63,6 +91,30 @@ export default function Auth() {
       setError('An unexpected error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getTitle = () => {
+    switch (mode) {
+      case 'login': return 'Welcome back';
+      case 'signup': return 'Get started';
+      case 'forgot': return 'Reset password';
+    }
+  };
+
+  const getSubtitle = () => {
+    switch (mode) {
+      case 'login': return 'Sign in to continue to your workspace';
+      case 'signup': return 'Create an account to start organizing';
+      case 'forgot': return 'Enter your email to receive a reset link';
+    }
+  };
+
+  const getButtonText = () => {
+    switch (mode) {
+      case 'login': return 'Sign in';
+      case 'signup': return 'Create account';
+      case 'forgot': return 'Send reset link';
     }
   };
 
@@ -115,12 +167,10 @@ export default function Auth() {
           {/* Auth Card */}
           <div className="bg-card rounded-2xl border border-border shadow-medium p-8">
             <h2 className="text-2xl font-bold text-foreground mb-2">
-              {isLogin ? 'Welcome back' : 'Get started'}
+              {getTitle()}
             </h2>
             <p className="text-muted-foreground mb-8">
-              {isLogin 
-                ? 'Sign in to continue to your workspace' 
-                : 'Create an account to start organizing'}
+              {getSubtitle()}
             </p>
 
             {error && (
@@ -146,20 +196,37 @@ export default function Auth() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-foreground font-medium">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-12 h-12 rounded-xl bg-secondary/50 border-border focus:bg-card transition-colors"
-                  />
+              {mode !== 'forgot' && (
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-foreground font-medium">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pl-12 h-12 rounded-xl bg-secondary/50 border-border focus:bg-card transition-colors"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {mode === 'login' && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('forgot');
+                      setError(null);
+                    }}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
 
               <Button 
                 type="submit" 
@@ -170,7 +237,7 @@ export default function Auth() {
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   <>
-                    {isLogin ? 'Sign in' : 'Create account'}
+                    {getButtonText()}
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -178,19 +245,34 @@ export default function Auth() {
             </form>
 
             <div className="mt-8 text-center">
-              <span className="text-muted-foreground text-sm">
-                {isLogin ? "Don't have an account? " : 'Already have an account? '}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsLogin(!isLogin);
-                  setError(null);
-                }}
-                className="text-sm font-medium text-primary hover:underline"
-              >
-                {isLogin ? 'Sign up' : 'Sign in'}
-              </button>
+              {mode === 'forgot' ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setError(null);
+                  }}
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  Back to sign in
+                </button>
+              ) : (
+                <>
+                  <span className="text-muted-foreground text-sm">
+                    {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode(mode === 'login' ? 'signup' : 'login');
+                      setError(null);
+                    }}
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    {mode === 'login' ? 'Sign up' : 'Sign in'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
