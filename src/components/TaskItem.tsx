@@ -3,6 +3,8 @@ import { Check, Trash2, Edit2, X, Flag, Calendar, Paperclip, ChevronDown, Chevro
 import { Task, Priority, Category } from '@/types/task';
 import { CategoryBadge } from './CategoryBadge';
 import { FileUpload, Attachment } from './FileUpload';
+import { ReminderDialog } from './ReminderDialog';
+import { Reminder } from '@/hooks/useNotifications';
 import { Input } from '@/components/ui/input';
 import { format, isToday, isTomorrow, isPast, isValid } from 'date-fns';
 
@@ -10,11 +12,14 @@ interface TaskItemProps {
   task: Task;
   category?: Category;
   attachments?: Attachment[];
+  reminders?: Reminder[];
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onEdit: (id: string, title: string) => void;
   onAddAttachment?: (attachment: Attachment) => void;
   onDeleteAttachment?: (taskId: string, attachmentId: string) => void;
+  onAddReminder?: (taskId: string, remindAt: Date, message?: string) => Promise<Reminder | null>;
+  onDeleteReminder?: (id: string) => Promise<boolean>;
 }
 
 const priorityConfig: Record<Priority, { label: string; className: string }> = {
@@ -23,7 +28,19 @@ const priorityConfig: Record<Priority, { label: string; className: string }> = {
   high: { label: 'High', className: 'text-priority-high' },
 };
 
-export function TaskItem({ task, category, attachments = [], onToggle, onDelete, onEdit, onAddAttachment, onDeleteAttachment }: TaskItemProps) {
+export function TaskItem({ 
+  task, 
+  category, 
+  attachments = [], 
+  reminders = [],
+  onToggle, 
+  onDelete, 
+  onEdit, 
+  onAddAttachment, 
+  onDeleteAttachment,
+  onAddReminder,
+  onDeleteReminder,
+}: TaskItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
   const [isExiting, setIsExiting] = useState(false);
@@ -142,6 +159,16 @@ export function TaskItem({ task, category, attachments = [], onToggle, onDelete,
 
         {/* Actions */}
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          {onAddReminder && onDeleteReminder && (
+            <ReminderDialog
+              taskId={task.id}
+              taskTitle={task.title}
+              dueDate={task.dueDate}
+              reminders={reminders}
+              onAddReminder={onAddReminder}
+              onDeleteReminder={onDeleteReminder}
+            />
+          )}
           <button
             onClick={() => setShowAttachments(!showAttachments)}
             className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
