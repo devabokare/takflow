@@ -24,7 +24,7 @@ type ViewMode = 'list' | 'board' | 'calendar' | 'planner';
 export function TodoApp() {
   const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
-  const { tasks, categories, attachments, loading: tasksLoading, addTask, toggleTask, deleteTask, editTask, updateTaskStatus, addAttachment, removeAttachment } = useTasks();
+  const { tasks, categories, attachments, loading: tasksLoading, addTask, toggleTask, deleteTask, editTask, updateTaskStatus, addAttachment, removeAttachment, reorderTasks } = useTasks();
   const { 
     notifications, 
     reminders,
@@ -151,7 +151,7 @@ export function TodoApp() {
             onToggle={toggleTask}
             onDelete={deleteTask}
             onEdit={editTask}
-            onReorder={() => {}}
+            onReorder={reorderTasks}
             onAddAttachment={addAttachment}
             onDeleteAttachment={removeAttachment}
             onAddReminder={addReminder}
